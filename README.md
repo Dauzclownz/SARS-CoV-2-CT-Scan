@@ -20,6 +20,7 @@ Swin-Small, ConvNeXt-Small and their soft-voting ensemble.
 | `Beyond_single_split_accuracy_SARS_CoV2_CT.ipynb` | Main notebook for Google Colab. It reproduces Tables 1-5 and 7 and Figures 1-6. It also runs the five-seed McNemar analysis behind Table 3 and the bootstrap confidence intervals reported in Section 4.6. |
 | `Beyond_single_split_accuracy_SARS_CoV2_CT.py` | Plain-text export of the notebook for reading and diffing. It contains Colab shell commands (`!pip`, `files.upload()`), so run the notebook rather than this file. |
 | `patient_level_evaluation.py` | Stand-alone script for Table 6 (Section 4.8). It compares slice-level and patient-level evaluation on the multiclass CT dataset. |
+| `patient_level_evaluation_colab.ipynb` | Google Colab notebook that runs `patient_level_evaluation.py`. It keeps results and the checkpoint on Google Drive and compares the new numbers with Table 6 of the manuscript. |
 | `img/` | Figure files produced by the notebook (`figure1_framework.png` to `figure6_gradcam.png`). In the manuscript, the titles drawn inside Figures 1, 3 and 5 are removed to follow the journal's artwork guidelines; the panels are otherwise identical. |
 
 ## Requirements
@@ -47,7 +48,7 @@ subject to the terms of that source. Please cite the original publications (see 
 | Original xDNN features and code [2] | xDNN reproduction with the native VGG-16 features | GitHub `Plamen-Eduardo/xDNN-SARS-CoV-2-CT-Scan` | Notebook, Section 1 |
 | UCSD COVID-CT: 349 COVID and 397 non-COVID images [4] | External validation (Table 4, Figures 4-6) | GitHub mirror `desaisrkr/https-github.com-UCSD-AI4H-COVID-CT` (the original UCSD-AI4H repository is offline) | Notebook, Section 1 |
 | MosMedData [5] | External validation at the volume level (Table 5) | Kaggle `mathurinache/mosmeddata-chest-ct-scans-with-covid19` | Notebook, Section 1 |
-| Multiclass CT dataset: 4,173 scans from 210 patients [3] | Patient-level evaluation (Table 6) | Kaggle `plameneduardo/a-covid-multiclass-dataset-of-ct-scans`, or Synapse `syn22174850` | `patient_level_evaluation.py --download` |
+| Multiclass CT dataset: 4,173 scans from 210 patients [3]; the Kaggle release holds 4,171 slices | Patient-level evaluation (Table 6) | Kaggle `plameneduardo/a-covid-multiclass-dataset-of-ct-scans`, or Synapse `syn22174850` | `patient_level_evaluation.py --download` |
 
 ## Reproducing Tables 1-5 and 7 and Figures 1-6 (notebook)
 
@@ -70,7 +71,7 @@ subject to the terms of that source. Please cite the original publications (see 
 | Figure 3 | 14 |
 | Figures 4-6 | 15 |
 | Table 7 | 16 |
-| Table 6 | `patient_level_evaluation.py`, described below (Section 17 of the notebook points to it) |
+| Table 6 | `patient_level_evaluation_colab.ipynb` or `patient_level_evaluation.py`, described below (Section 17 of the notebook points to it) |
 
 **Runtime on a T4.** The three deep models are trained once in Section 7 and reused by Tables 1, 3, 4 and 5 and by Figures 2 and 4-6.
 - Table 2 (five-fold cross-validation) takes about 2-3 hours. Re-running the cell after a disconnect resumes from the last finished fold.
@@ -94,8 +95,16 @@ The preprocessing, training function, test-time augmentation, metrics, VGG-16 en
 copied from Sections 2-4 of the notebook with the same settings. The same number of epochs (default 8) is used
 for every split.
 
+**On Google Colab**, open `patient_level_evaluation_colab.ipynb`, select a T4 GPU and run all cells. The notebook:
+- downloads the data and shows its folder layout;
+- runs an optional 5-minute end-to-end check, then the full evaluation;
+- writes results and the checkpoint to Google Drive, so a dropped session can be resumed by running all cells again;
+- prints the new Table 6 next to the manuscript values.
+
+**From the command line:**
+
 ```bash
-# Colab or any machine with kaggle.json in ~/.kaggle: download the data, then run
+# any machine with kaggle.json in ~/.kaggle: download the data, then run
 python patient_level_evaluation.py --download --data_dir /content/multiclass
 
 # with a copy that is already extracted (Kaggle or Synapse)
@@ -112,7 +121,7 @@ python patient_level_evaluation.py --data_dir /path/to/multiclass \
 - **Explicit index.** Supply `--index_csv` with the columns `path,label,patient`.
 
 The script stops with a message if any image lacks a patient identifier. It also prints the number of slices and
-patients per class, so the expected 4,173 scans from 210 patients can be checked before training starts.
+patients per class, so the expected 4,171 slices (Kaggle release) from 210 patients can be checked before training starts.
 
 **Main options.**
 
@@ -141,7 +150,7 @@ patients per class, so the expected 4,173 scans from 210 patients can be checked
 | `checkpoint.pkl`, `vgg16_features.npy` | Resume state and cached features |
 
 **Runtime.** The full run consists of 18 trainings (three models on the slice split and five folds) and six xDNN fits.
-- Expect roughly 2-3 hours on a T4 (an estimate).
+- The run behind the manuscript took about 2.2 hours on a T4 (Google Colab).
 - Every finished training is checkpointed, so re-running the same command resumes after a disconnect.
 - A checkpoint made with a different dataset or configuration is refused rather than mixed in.
 
