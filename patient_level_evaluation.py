@@ -10,7 +10,8 @@ Reproduces Table 6 (Section 4.8) of the manuscript
 What the script measures
 ------------------------
 Slice-level leakage on the larger, patient-organized multiclass CT dataset of
-Soares et al. (2024), Evol Syst 15:635-640 (4,173 scans from 210 subjects), collapsed to
+Soares et al. (2024), Evol Syst 15:635-640 (4,173 scans from 210 subjects in the paper; the Kaggle
+release holds 4,171 slices), collapsed to
 the binary task COVID versus non-COVID, where non-COVID comprises healthy lungs and other
 pulmonary conditions. Dataset, task and training pipeline are held fixed and only the split
 changes:
@@ -90,7 +91,7 @@ from torchvision import transforms
 from torchvision.models import VGG16_Weights, vgg16
 
 KAGGLE_SLUG = 'plameneduardo/a-covid-multiclass-dataset-of-ct-scans'
-EXPECTED = {'slices': 4173, 'patients': 210}          # Soares et al. (2024)
+EXPECTED = {'slices': (4171, 4173), 'patients': 210}  # 4,171 in the Kaggle release, 4,173 in Soares et al. (2024)
 IMG_EXT = ('.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff')
 DEFAULT_PATIENT_REGEX = r'(?i)(?:patient|paciente|pat)[\s_\-]*0*(\d+)'
 
@@ -566,9 +567,9 @@ def main():
     print(summary.to_string(index=False))
     n_sl, n_pt = len(df), df['patient'].nunique()
     print(f'total: {n_sl} slices from {n_pt} patients | COVID slices {int(y.sum())}, non-COVID {int((1 - y).sum())}')
-    if not args.subsample_patients and (n_sl, n_pt) != (EXPECTED['slices'], EXPECTED['patients']):
-        print(f'WARNING: expected {EXPECTED["slices"]} slices from {EXPECTED["patients"]} patients '
-              '(Soares et al. 2024); check that the full dataset was extracted.')
+    if not args.subsample_patients and (n_sl not in EXPECTED['slices'] or n_pt != EXPECTED['patients']):
+        print(f'WARNING: expected 4,171 slices (Kaggle release; 4,173 in Soares et al. 2024) from '
+              f'{EXPECTED["patients"]} patients; check that the full dataset was extracted.')
 
     # ------------------------------------------------------------------ splits
     idx = np.arange(len(df))
